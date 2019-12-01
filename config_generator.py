@@ -52,8 +52,8 @@ if not os.path.exists(output_directory):
 print("Create templates...")
 for parameter in config_parameters:
     result = template.render(parameter)
-    f = open(os.path.join(output_directory, parameter['hostname'] + ".cfg"), "w")
+    f = open(os.path.join(output_directory, parameter['serial'] + ".cfg"), "w")
     f.write(result)
     f.close()
-    print("Configuration '%s' created..." % (parameter['hostname'] + ".cfg"))
+    print("Configuration '%s' created..." % (parameter['serial'] + ".cfg"))
 print("DONE")
