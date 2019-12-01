@@ -1,0 +1,145 @@
+!
+no service pad
+service tcp-keepalives-in
+service tcp-keepalives-out
+service timestamps debug datetime msec localtime
+service timestamps log datetime msec localtime
+service private-config-encryption
+service password-encryption
+! Call-home is enabled by Smart-Licensing.
+service call-home
+no platform punt-keepalive disable-kernel-core
+!
+hostname {{ hostname }}
+!
+!
+vrf definition Mgmt-vrf
+ !
+ address-family ipv4
+ exit-address-family
+ !
+ address-family ipv6
+ exit-address-family
+!
+logging buffered 500000
+enable secret {{ secret }}
+!
+no aaa new-model
+clock timezone ISR 2 0
+clock summer-time ISR recurring
+!
+!
+call-home
+ ! If contact email address in call-home is configured as sch-smart-licensing@cisco.com
+ ! the email address configured in Cisco Smart License Portal will be used as contact email address to send SCH notifications.
+ contact-email-addr sch-smart-licensing@cisco.com
+ profile "CiscoTAC-1"
+  active
+  destination transport-method http
+  no destination transport-method email
+no ip source-route
+no ip gratuitous-arps
+ip icmp rate-limit unreachable 1000
+!
+!
+no ip domain lookup
+ip domain name {{ domain_name }}
+!
+login on-failure log
+login on-success log
+!
+vtp mode transparent
+!
+!
+license boot level network-{{ license }} addon dna-{{ license }}
+!
+!
+diagnostic bootup level minimal
+!
+spanning-tree mode rapid-pvst
+spanning-tree extend system-id
+file prompt quiet
+!
+errdisable recovery cause all
+errdisable recovery interval 30
+!
+username {{ user }} privilege 15 secret {{ password }}
+!
+redundancy
+ mode sso
+!
+!
+!
+!
+!
+transceiver type all
+ monitoring
+!
+!
+policy-map system-cpp-policy
+!
+!
+{% for vlan in vlans %}
+vlan {{  vlan  }}
+{% endfor %}
+!
+!
+{% for interface in interfaces %}
+interface {{ interface }}
+ switchport mode access
+ switchport access vlan {{ interface.vid }}
+ storm-control broadcast level pps 300 200
+ storm-control multicast level pps 300 200
+ storm-control action shutdown
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+{% endfor %}
+!
+vlan 999
+ name Mgmt
+interface Vlan999
+ description Management Vlan
+ ip address {{ mgmt_ip }} 255.255.255.0
+!
+!
+ip forward-protocol nd
+!
+ip ssh version 2
+!
+!
+control-plane
+ service-policy input system-cpp-policy
+!
+banner motd C
+******************************************************************
+*                         XXX Network                            *
+*                                                                *
+*   Use of the network is restricted to authorized users. User   *
+* activity is monitored and recorded by system personnel. Anyone *
+*    using the Network expressly consents to such monitoring     *
+*  and recording. BE ADVISED: if possible criminal activity is   *
+*     detected, system records, along with certain personal      *
+* information, may be provided to law enforcement officials.     *
+******************************************************************
+* !!!!!!!!!!!!               WARNING               !!!!!!!!!!!!! *
+*                This node is managed by XXX_YYYYY               *
+*                      For more information                      *
+*                                                                *
+*                                                                *
+******************************************************************
+
+!
+line con 0
+ exec-timeout 30 0
+ logging synchronous
+ login local
+ stopbits 1
+line vty 0 15
+ exec-timeout 15 0
+ logging synchronous
+ login local
+ transport input ssh
+ transport output ssh
+!
+!
+end
